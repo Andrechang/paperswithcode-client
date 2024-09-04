@@ -1,5 +1,7 @@
 use reqwest::Error;
 use serde::Deserialize;
+use std::collections::HashMap;
+
 use crate::http;
 
 #[derive(Debug)]
@@ -24,6 +26,20 @@ impl PapersWithCodeClient {
         );
 
         PapersWithCodeClient { http }
+    }
+
+    pub async fn paper_list(&self, params:Option<HashMap<String, String>>) -> Result<serde_json::Value, Error> {
+        // params: A dictionary of parameters to filter the papers. List of keys in the dictionary:
+        //      q: Filter papers by querying the paper title and abstract.
+        //      arxiv_id: Filter papers by arxiv id.
+        //      title: Filter papers by part of the title.
+        //      abstract: Filter papers by part of the abstract.
+        //      ordering: Which field to use when ordering the results.
+        //      page: Desired page.
+        //      items_per_page: Desired number of items per page.
+        let response = self.http.get("/papers/", None, params).await?;
+        let paper = response;
+        Ok(paper)
     }
 
     pub async fn paper_get(&self, paper_id: &str) -> Result<serde_json::Value, Error> {
@@ -79,6 +95,18 @@ impl PapersWithCodeClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn test_paper_list() {
+        let token: Option<String> = Some("".to_string());
+        let client: PapersWithCodeClient = PapersWithCodeClient::new(token, None);
+        let mut params = HashMap::new();
+        params.insert("q".to_string(), "robotics".to_string());
+
+        match client.paper_list(Some(params)).await {
+            Ok(paper) => println!("Paper List: {:?}", paper),
+            Err(e) => eprintln!("Error: {}", e),
+        };
+    }
 
     #[tokio::test]
     async fn test_paper_get() {
